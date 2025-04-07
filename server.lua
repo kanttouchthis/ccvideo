@@ -44,7 +44,7 @@ while true do
     drawFrame(data["frame"])
     playAudio(data["audio_chunk"])
 
-    if wait ~= nil then
+    if wait == nil then
         framerate = data["framerate"]
         wait = 1 / framerate * 1000
     end
