@@ -24,7 +24,7 @@ local function drawFrame(frame)
         return
     end
     for i = 1, #monitors do
-        modem.transmit(monitors[i], 999, frame[i])
+        modem.transmit(tonumber(monitors[i]), 999, frame[i])
     end
 end
 
@@ -32,7 +32,7 @@ local function playAudio(audio)
     if audio == nil then
         return
     end
-    modem.transmit(speaker, 999, audio)
+    modem.transmit(tonumber(speaker), 999, audio)
 end
 
 local response, data, framerate, wait, diff
