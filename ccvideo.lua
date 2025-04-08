@@ -1,11 +1,13 @@
 local args = { ... }
-local mode
+local mode = args[1]
 if mode == nil then
     print("Usage: ccvideo monitor")
     print("Usage: ccvideo speaker")
     print("Usage: ccvideo play <video>")
+    os.queueEvent("terminate")
+    os.sleep(1)
 end
-mode = tostring(args[1])
+mode = tostring(mode)
 
 local function getMessage(modem, channel)
     local event, side, receiveChannel, replyChannel, message, distance
@@ -138,7 +140,7 @@ end
 
 local function loop(func)
     while true do
-        pcall(func)
+        func()
     end
 end
 
