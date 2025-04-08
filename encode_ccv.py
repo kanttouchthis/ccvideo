@@ -31,17 +31,6 @@ os.system(
 )
 os.system(f'ffmpeg -i "{sys.argv[1]}" -ac 1 -t 00:01:00 -ar 48000 -f s8 ./temp/audio.raw')
 
-audio_chunks = []
-with open("./temp/audio.raw", "rb") as f:
-    while True:
-        chunk = f.read(int(48000.0 / framerate))
-        if not chunk:
-            break
-        audio_list = np.frombuffer(chunk, dtype=np.int8).tolist()
-        audio_chunks.append(audio_list)
-    audio_chunks.append([0] * int(48000 * offset))
-
-
 index = Index.restore("colors.index")
 with open("colors.json", "r") as f:
     labels = json.load(f)
@@ -73,7 +62,6 @@ def chunk_image(image):
             right = left + chunk_width
             lower = upper + chunk_height
 
-            # Crop and save
             chunk = image.crop((left, upper, right, lower))
             chunks.append(chunk)
     return chunks
@@ -96,11 +84,12 @@ files = os.listdir("./temp")
 with ThreadPoolExecutor(max_workers=16) as ex:
     frames = list(tqdm.tqdm(ex.map(convert, files), total=len(files)))
 
-black_frames = [["f" * (chunk_width * chunk_height)] * (N * M)] * int(
-    framerate * offset
-)
-frames = black_frames + frames
-jsondata = {"framerate": framerate, "frame": frames, "audio_chunks": audio_chunks}
+with open("./temp/audio.raw", "rb") as f:
+    audio = f.read()
+    audio = np.frombuffer(audio, dtype=np.int8).tolist()
+n = int(48000.0 / framerate)
+audio_chunks = [audio[i:i + n] for i in range(0, len(audio), n)]
+
 with gzip.open(sys.argv[1] + ".ccv", "w") as f:
     for frame, audio_chunk in zip(frames, audio_chunks):
         f.write(
