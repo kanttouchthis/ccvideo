@@ -132,13 +132,15 @@ local function playFunction()
         end
         response = http.get(url)
         data = response.readAll()
-        if wait == nil then
-            framerate = data["framerate"]
-            wait = 1 / framerate * 1000
+        if data ~= nil then
+            if wait == nil then
+                framerate = data["framerate"]
+                wait = 1 / framerate * 1000
+            end
+            diff = os.epoch("utc") - time
+            time = os.epoch("utc")
+            os.sleep(math.max(wait - diff, 0) / 1000)
         end
-        diff = os.epoch("utc") - time
-        time = os.epoch("utc")
-        os.sleep(math.max(wait - diff, 0) / 1000)
     end
 end
 
