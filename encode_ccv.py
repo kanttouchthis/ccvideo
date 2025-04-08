@@ -29,7 +29,7 @@ os.makedirs("temp")
 os.system(
     f'ffmpeg -i "{sys.argv[1]}" -r {framerate} -t 00:01:00 -vf "pad=iw:iw:(ow-iw)/2:(ow-ih)/2:color=black,scale={width}:{height}:flags=neighbor" -q:v 3 ./temp/%07d.jpg'
 )
-os.system(f'ffmpeg -i "{sys.argv[1]}" -ac 1 -t 00:01:00 -f s8 ./temp/audio.raw')
+os.system(f'ffmpeg -i "{sys.argv[1]}" -ac 1 -t 00:01:00 -ar 48000 -f s8 ./temp/audio.raw')
 
 audio_chunks = []
 with open("./temp/audio.raw", "rb") as f:
