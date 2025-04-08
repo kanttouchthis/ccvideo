@@ -34,7 +34,7 @@ os.system(f'ffmpeg -i "{sys.argv[1]}" -ac 1 -t 00:01:00 -ar 48000 -f s8 ./temp/a
 audio_chunks = []
 with open("./temp/audio.raw", "rb") as f:
     while True:
-        chunk = f.read(48000 // int(framerate))
+        chunk = f.read(int(48000.0 / framerate))
         if not chunk:
             break
         audio_list = np.frombuffer(chunk, dtype=np.int8).tolist()
