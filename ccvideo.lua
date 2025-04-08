@@ -125,13 +125,13 @@ local function playFunction()
 
     local response, data, framerate, wait, diff
     while true do
+        if data ~= nil then
+            data = textutils.unserialiseJSON(data)
+            transmitAudio(modem, speaker, data["audio_chunk"])
+            transmitFrames(modem, monitors, data["frame"])
+        end
         response = http.get(url)
         data = response.readAll()
-        data = textutils.unserialiseJSON(data)
-
-        transmitAudio(modem, speaker, data["audio_chunk"])
-        transmitFrames(modem, monitors, data["frame"])
-
         if wait == nil then
             framerate = data["framerate"]
             wait = 1 / framerate * 1000
