@@ -138,7 +138,7 @@ local function playFunction()
         end
         diff = os.epoch("utc") - time
         time = os.epoch("utc")
-        os.sleep(math.max(diff - wait, 0) / 1000)
+        os.sleep(math.max(wait - diff, 0) / 1000)
     end
 end
 
