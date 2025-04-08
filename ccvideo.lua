@@ -1,3 +1,4 @@
+local ccstrings = require("cc.strings")
 local args = { ... }
 local mode = args[1]
 if mode == nil then
@@ -23,17 +24,11 @@ local function playAudio(speaker, audio)
     if speaker == nil then
         return
     end
-    if not type(audio) == "table" then
-        return
-    end
     speaker.playAudio(audio)
 end
 
 local function drawFrame(monitor, frame, width, height)
     if monitor == nil then
-        return
-    end
-    if not type(frame) == "string" then
         return
     end
     local char, text, back
@@ -56,10 +51,14 @@ local function speakerFunction()
     local modem = peripheral.find("modem")
     modem.open(channel)
     print("speaker on channel: " .. channel)
+    local ws = assert(http.websocket("ws://localhost:6789"))
 
-    local audio
+    local idx, audio
     while true do
-        audio = getMessage(modem, channel)
+        idx = getMessage(modem, channel)
+        ws.send(tostring(idx))
+        audio = ws.receive()
+        audio = textutils.unserializeJSON(audio)
         if not pcall(playAudio, speaker, audio) then
             print("dropped audio")
         end
@@ -80,65 +79,61 @@ local function monitorFunction()
     local modem = peripheral.find("modem")
     modem.open(channel)
     print("monitor on channel: " .. channel)
+    local ws = assert(http.websocket("ws://localhost:6790"))
 
-    local frame
+    local message, idx, chunk, frame
     while true do
-        frame = getMessage(modem, channel)
+        message = getMessage(modem, channel)
+        idx = message[1]
+        chunk = message[2]
+        ws.send(idx..","..chunk)
+        frame = ws.receive()
+        frame = textutils.unserializeJSON(frame)
         if not pcall(drawFrame, monitor, frame, width, height) then
             print("dropped frame")
         end
     end
 end
 
-local function transmitFrames(modem, monitors, frames)
-    if frames == nil then
+local function sendFrameIdx(modem, monitors, idx)
+    if idx == nil then
         return
     end
     for i = 1, #monitors do
-        modem.transmit(tonumber(monitors[i]), 999, frames[i])
+        modem.transmit(tonumber(monitors[i]), 999, {idx, i-1})
     end
 end
 
-local function transmitAudio(modem, speaker, audio)
-    if audio == nil then
+local function sendAudioIdx(modem, speaker, idx)
+    if idx == nil then
         return
     end
-    modem.transmit(tonumber(speaker), 999, audio)
+    modem.transmit(tonumber(speaker), 999, idx)
 end
 
 local function playFunction()
-    local ccstrings = require("cc.strings")
-
     local monitors = settings.get("monitors")
     monitors = ccstrings.split(monitors, ",")
 
     local speaker = settings.get("speaker")
 
-    local url = settings.get("url")
-    if url == nil then
-        url = "http://127.0.0.1:5000/get"
-    end
+    local ws = assert(http.websocket("ws://localhost:6788"))
 
     local modem = peripheral.find("modem")
 
-    local time = os.epoch("utc")
-
-    local response, data, framerate, wait, diff
+    ws.send("")
+    local meta = ws.receive()
+    meta = textutils.unserializeJSON(meta)
+    ws.close()
+    local framerate = tonumber(meta["framerate"])
+    local nframes = tonumber(meta["nframes"])
+    local wait = 1.0/framerate
     while true do
-        response = http.get(url)
-        data = response.readAll()
-        data = textutils.unserialiseJSON(data)
-
-        transmitAudio(modem, speaker, data["audio_chunk"])
-        transmitFrames(modem, monitors, data["frame"])
-
-        if wait == nil then
-            framerate = data["framerate"]
-            wait = 1 / framerate * 1000
+        for idx = 0, nframes - 2 do
+            sendAudioIdx(modem, speaker, idx)
+            sendFrameIdx(modem, monitors, idx)
+            os.sleep(wait)
         end
-        diff = os.epoch("utc") - time
-        time = os.epoch("utc")
-        os.sleep(math.max(wait - diff, 0) / 1000)
     end
 end
 
