@@ -60,7 +60,9 @@ local function speakerFunction()
     local audio
     while true do
         audio = getMessage(modem, channel)
-        playAudio(speaker, audio)
+        if not pcall(playAudio, speaker, audio) then
+            print("dropped audio")
+        end
     end
 end
 
@@ -82,7 +84,9 @@ local function monitorFunction()
     local frame
     while true do
         frame = getMessage(modem, channel)
-        drawFrame(monitor, frame, width, height)
+        if not pcall(drawFrame, monitor, frame, width, height) then
+            print("dropped frame")
+        end
     end
 end
 
